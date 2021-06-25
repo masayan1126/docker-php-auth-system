@@ -23,7 +23,7 @@ unset($_SESSION['csrf_token']);  // セッションの中のcsrf_tokenを削除(
 
 // ②postされたemailとpasswordのバリデーション(メールアドレス、パスワードが未入力でないかチェックする)
 $auth = new Auth(filter_input(INPUT_POST, 'email'), filter_input(INPUT_POST, 'password'), $username = null, $confirm_password = null);
-$signin_error = $auth->validateSignIn();
+$signin_error = $auth->validate("signin");
 
 if (count($signin_error) > 0) {
     $_SESSION['err'] = $signin_error;
@@ -32,4 +32,5 @@ if (count($signin_error) > 0) {
 }
 
 // ③サインイン処理
-Auth::signIn(filter_input(INPUT_POST, 'email'), filter_input(INPUT_POST, 'password'));
+$auth = new Auth(filter_input(INPUT_POST, 'email'), filter_input(INPUT_POST, 'password'), $username = null, $confirm_password = null);
+$auth->signIn();

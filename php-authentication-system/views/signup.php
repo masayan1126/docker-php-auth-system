@@ -22,7 +22,7 @@ if ($result) {
 
 // ④csrfトークンを生成しフォームにセット。同トークンをサーバーのセッションファイルに書き込む
 if (empty($_SESSION['csrf_token'])) {
-    $token = h(setToken());
+    $token = h(generateCsrfToken());
     $_SESSION['csrf_token'] = $token;
 } else {
     $token = $_SESSION['csrf_token'];

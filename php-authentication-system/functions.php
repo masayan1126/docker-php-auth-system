@@ -18,21 +18,12 @@ function h($str) {
  * @param void
  * @return string $csrf_token
  */
-function setToken() {
+function generateCsrfToken() {
   // トークンを生成
   // フォームからそのトークンを送信
   // 送信後の画面でそのトークンを照会
   // トークンを削除
   // post送信時は必ず必要
   $csrf_token = bin2hex(random_bytes(32));
-  $_SESSION['csrf_token'] = $csrf_token;
-
   return $csrf_token;
 }
-
-// function inspectHasAuthenticationError($err) {
-//   if (count($err) === 0) {
-//     return false;
-// }
-//   return true;
-// }

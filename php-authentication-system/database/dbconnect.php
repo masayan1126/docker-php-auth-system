@@ -1,11 +1,6 @@
 <?php
 require_once ( dirname(__FILE__) . '/../env.php');
 
-// // 本番環境ではログに記録する
-// ini_set('log_errors','On');
-// // ログの保存先
-// ini_set('error_log','/log/php_error.log');
-
 function connectToDatabase () {
 
     $host = DB_HOST;
@@ -20,7 +15,7 @@ function connectToDatabase () {
     try {
         $pdo = new PDO($dsn, $user, $pass, [ // new PDO('DSN','ユーザー名','パスワード',オプション);
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // //PDOのエラー時に例外(PDOException)が発生するようになる
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // フィールド名で添字を付けた配列を返す
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // 取得したデータを連想配列で返す
         ]);
 
         return $pdo;

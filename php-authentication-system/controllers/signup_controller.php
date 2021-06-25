@@ -24,7 +24,7 @@ unset($_SESSION['csrf_token']); // セッションの中のcsrf_tokenを削除(�
 
 // ②postされたusername、email、password、confirm_passwordのバリデーション
 $auth = new Auth(filter_input(INPUT_POST, 'email'), filter_input(INPUT_POST, 'password'), filter_input(INPUT_POST, 'username'), filter_input(INPUT_POST, 'password_conf'));
-$signup_error = $auth->validateSignUp();
+$signup_error = $auth->validate("signup");
 
 if (count($signup_error) > 0) {
   $_SESSION['err'] = $signup_error;
@@ -33,7 +33,6 @@ if (count($signup_error) > 0) {
 }
 
 // ③ユーザー登録処理と認証
-$newUser = Auth::createUser($_POST);
-Auth::signUp($newUser);
-
-?>
+$auth = new Auth(filter_input(INPUT_POST, 'email'), filter_input(INPUT_POST, 'password'), filter_input(INPUT_POST, 'username'), $confirm_password = null);
+$hasCreated = $auth->createUser();
+Auth::signUp($hasCreated, filter_input(INPUT_POST, 'email'));
