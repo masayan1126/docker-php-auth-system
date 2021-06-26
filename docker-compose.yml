@@ -1,7 +1,10 @@
-# docker-compose build
+# ymlファイルの書き方がversionにより異なるため、明示しておく必要がある
+
 version: "3.8"
 
+# アプリケーションを構成するコンテナの集合体。
 services:
+  # それぞれのサービスを識別するために名称をつける
   app_php:
     container_name: php_container
     build: ./docker/php
