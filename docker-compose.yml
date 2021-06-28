@@ -7,13 +7,16 @@ services:
   # それぞれのサービスを識別するために名称をつける
   app_php:
     container_name: php_container
+    # dockerhubのイメージを直接指定するか、Dockerfileを別途作成してそちらを参照するように指定するかの2パターンがあります。(ビルド時に複雑なことをする場合はDockerfileに記載する必要がある)
     build: ./docker/php
+    # Dockerコンテナを使用した開発では、コンテナ内に入って開発作業をする必要があるので、開発に際して作成したファイルやフォルダはホストOS側にも同期が取られる必要があります。volumesでは、ホストOS側のディレクトリ:コンテナ側のディレクトリという形で指定することで同期が取れるようになります。
     volumes:
       - ./:/var/www
 
   web_nginx:
     container_name: nginx_container
     image: nginx
+    # localhost:8030にアクセスすると、dockerコンテナ上で起動したwebサーバーのポート8000番に繋がるという仕組みです(※ホストOS側のポート番号は重複しているとエラーが生じるので注意)
     ports:
       - 8030:8000
     volumes:
@@ -43,11 +46,10 @@ services:
     container_name: phpmyadmin
     environment:
       - PMA_ARBITRARY=1
+      # dbサーバーのサービス名(db_mysql)を指定する
       - PMA_HOST=db_mysql
       - PMA_USER=root
       - PMA_PASSWORD=root
-    links:
-      - db_mysql
     ports:
       - 8288:80
     volumes:
