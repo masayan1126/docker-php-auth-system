@@ -1,15 +1,36 @@
 <?php
-// dirname(__FILE__)にはそのファイルの絶対パスが入る
 require_once ( dirname(__FILE__) . '/../database/dbconnect.php');
+require_once ( dirname(__FILE__) . '/../functions.php');
+
+/**
+ * Authクラス(認証関連のフィールドとメソッドの集まり)
+ * ■フィールド
+ * $email、$username、$password、$confirm_password、$varidate_err
+ * 
+ * ■メソッド
+ * ①ユーザー作成(createUser)
+ * ②バリデーション(validate)
+ * ③サインアップ(signUp)
+ * ④サインイン(signIn)
+ * ⑤Eメールでユーザー検索(searchUserBasedEmail)
+ * ⑥セッションから認証状態のチェック(checkIsAuthenticated)
+ * ⑦サインアウト(signOut)
+ */
 
 class Auth
 {
+    // オブジェクト指向について
+    // アクセス修飾子(private、protected、public)でカプセル化
     private $email;
     private $username;
     private $password;
     private $confirm_password;
-    private $err = [];
+    private $varidate_err = [];
 
+    /**
+     * コンストラクタ(インスタンス生成時に動的に値を渡して、フィールドに値をセットできる)
+     * マジックメソッド(特殊な状況下で実行されるメソッド)
+     *  */ 
     public function __construct($email, $password, $username, $confirm_password)
     {
       //初期化
@@ -20,76 +41,80 @@ class Auth
     }
 
     /**
-     * ユーザー登録
+     * phpDoc
+     */
+
+    /**
      * @return bool $hasCreated
      */
 
+    // ①ユーザー作成(createUser)
     public function createUser() 
     {
-        /**
-         * ;DELETE FROM user--"などのsqlインジェクション対策
-         * SQL中に、後に可変値を埋め込みたい場所を「$1」「$2」あるいは「?」などの特別な文字列、すなわちプレースホルダで確保しておき、ここに埋め込む値はSQL本体とは分離して渡す       
-         */
-        $sql = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
-        $arr = [$this->username, $this->email, password_hash($this->password,PASSWORD_DEFAULT)]; // ハッシュ化
-        $hasCreated = false;
-        
-        try {
-            // PDOStatementオブジェクト
-            $stmt = connectToDatabase()->prepare($sql);
-            // pdoのexecuteを実行
-            $stmt->execute($arr); // executeはプリペアドステートメントを実行する。成功した場合に true を、失敗した場合に false を返す。
-            $hasCreated = true;
-                
-        } catch(\Exception $e) {
-          echo $e;
-        }
-        return $hasCreated;
+      /**
+       * ;DELETE FROM user--"などのsqlインジェクション対策
+       * プレースホルダでSQL文の可変値を「$1」「$2」あるいは「?」などの特別な文字列で設定しておき、後から埋め込む
+       */
+      $sql = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
+      $hasCreated = false;
+      
+      try {
+          // PDOStatementオブジェクト->prepare
+          $stmt = connectToDatabase()->prepare($sql);
+          // executeはプリペアドステートメントを実行する。成功した場合に true を、失敗した場合に false を返す。
+          $hasCreated = $stmt->execute([$this->username, $this->email, password_hash($this->password,PASSWORD_DEFAULT)]);  // パスワードはハッシュ化
+              
+      } catch(\Exception $e) {
+        echo h($e);
       }
+      return $hasCreated;
+    }
 
      /**
-     * バリデーション
      * @param string $authenticationOperation
-     * @return array $err
+     * @return array $varidate_err
      */
 
+    /**
+     * ②バリデーション(validate)
+     */
     public function validate($authenticationOperation) 
     {
       if(empty($this->email)) {
-        $this->err['email_blank'] = 'メールアドレスを入力してください。';
+        $this->varidate_err['email_blank'] = 'メールアドレスを入力してください。';
       }
       
       if ($authenticationOperation === "signin") {
         if(empty($this->password)) {
-          $this->err['password_blank'] = 'パスワードを入力してください。';
+          $this->varidate_err['password_blank'] = 'パスワードを入力してください。';
         }
 
       } else {
         if(empty($this->username)) {
-          $this->err['username_blank'] = 'ユーザ名を入力してください。';
+          $this->varidate_err['username_blank'] = 'ユーザ名を入力してください。';
         }
   
         // 正規表現(preg_match)
         if (!preg_match("/\A[a-z\d]{8,100}+\z/i", $this->password)) {
-          $this->err['password_invalid'] = 'パスワードは英数字8文字以上100文字以下にしてください。';
+          $this->varidate_err['password_invalid'] = 'パスワードは英数字8文字以上100文字以下にしてください。';
         }
         
         if ($this->password !== $this->confirm_password) {
-          $this->err['confirm_password_invalid'] = '確認用パスワードと異なっています。';
+          $this->varidate_err['confirm_password_invalid'] = '確認用パスワードと異なっています。';
         }
       }
       
-      return $this->err;
+      return $this->varidate_err;
     }
 
      /**
-     * サインアップ
      * @param bool $hasCreated
      * @param string $email
      * @return void
      */
 
-    public static function signUp($hasCreated, $email)
+    // ③サインアップ(signUp)
+    public static function signUp($hasCreated, $email) // static
     {
       if(!$hasCreated) {
         $_SESSION['err']['user_registration_failure'] = 'ユーザー登録に失敗しました';
@@ -99,18 +124,17 @@ class Auth
 
       /**
        * $thisは、自分自身のオブジェクトを指し、インスタンス化した際、クラス内のメンバ変数やメソッドにアクセスする際に使用
-       * self:: は、自クラスを示します。クラス定数、static変数については、インスタンス化せずに使用します。そのため、$thisは使用せず、代わりにselfを使用します。(staticメソッドにアクセスできます)
+       * self:: は、自クラスを示します。クラス定数、static変数については、インスタンス化せずに使用します。そのため、$thisは使用せず、代わりにselfを使用します。
        */
       $newUser = self::searchUserBasedEmail($email);
-      
-      session_regenerate_id(true); // セッションハイジャック対策
+      session_regenerate_id(true); // セッションハイジャック対策(「セッション」を窃取し、本人に成り代わって通信を行うというサイバー攻撃 = なりすまし)のため、必ずセッションIDを再生成する
       $_SESSION['signin_user'] = $newUser;
       unset($_SESSION['err']); // サインインできたら、セッションのエラーを消去する
       header('Location: ../views/mypage.php');
     }
 
     /**
-     * サインイン
+     * ④サインイン(signIn)
      * @return void
      */
     public function signIn()
@@ -130,41 +154,40 @@ class Auth
       }
       
       // emailとパスワードが一致した場合はサインイン
-      session_regenerate_id(true); // セッションハイジャック対策
+      session_regenerate_id(true); // セッションハイジャック対策(「セッション」を窃取し、本人に成り代わって通信を行うというサイバー攻撃 = なりすまし)のため、必ずセッションIDを再生成する
       $_SESSION['signin_user'] = $target_user;
-      unset($_SESSION['err']); // サインインできたら、セッションのエラーを消去する
+      unset($_SESSION['err']); // サインインできたら、セッションのエラーを消去する(unset = 変数や配列の特定の要素を削除)
       header('Location: ../views/mypage.php');
     }
     
     /**
-     * emailをもとに、DBからユーザを取得
      * @param string $email
      * @return array|bool $user|false
      */
+
+    // ⑤Eメールでユーザー検索(searchUserBasedEmail)
     public static function searchUserBasedEmail($email)
     {
       $sql = 'SELECT * FROM users WHERE email = ?';
 
-      // emailを配列に入れる
-      $arr = [];
-      $arr[] = $email;
-
       try {
         $stmt = connectToDatabase()->prepare($sql);
-        $stmt->execute($arr);
+        // execute(array|null)
+        $stmt->execute([$email]);
         $user = $stmt->fetch(); // fetchメソッドでSQLの結果を返すことが可能
         return $user;
         
       } catch(\Exception $e) {
-        echo $e;
+        echo h($e);
         return false;
       }
     }
 
     /**
-     * 認証状態のチェック
      * @return bool $isAuthenticated
      */
+
+    // ⑥セッションから認証状態のチェック(checkIsAuthenticated)
     public static function checkIsAuthenticated()
     {
       $isAuthenticated = false;
@@ -177,11 +200,13 @@ class Auth
     }
 
   /**
-   * サインアウト処理
    * @return void
    */
+
+    // ⑦サインアウト(signOut)
     public static function signOut()
     {
+      //セッションを破棄($_SESSIONはphpからセッションデータにアクセスするためのスーパーグローバル変数)
       $_SESSION = array();
       session_destroy();
       header('Location: ../views/signin.php');

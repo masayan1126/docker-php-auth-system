@@ -7,6 +7,7 @@
  * ③サインイン処理
  */
 
+// この位置で書くと、require_onceの読み込み先ファイルでもsessionが使用できる
 session_start();
 
 require_once(dirname(__FILE__) . '/../classes/Auth.php'); 
@@ -21,10 +22,14 @@ if (!isset($_SESSION['csrf_token']) || filter_input(INPUT_POST, 'csrf_token') !=
 
 unset($_SESSION['csrf_token']);  // セッションの中のcsrf_tokenを削除(ワンタイム利用のため)　フォーム画面以外からのセッションや、二重送信(フォーム再送信のconfirmからの送信)を対策
 
-// ②postされたemailとpasswordのバリデーション(メールアドレス、パスワードが未入力でないかチェックする)
+/**
+ * ②postされたemailとpasswordのバリデーション(メールアドレス、パスワードが未入力でないかチェックする)
+ * Authクラスのインスタンス化(->)
+ */
 $auth = new Auth(filter_input(INPUT_POST, 'email'), filter_input(INPUT_POST, 'password'), $username = null, $confirm_password = null);
 $signin_error = $auth->validate("signin");
 
+// count
 if (count($signin_error) > 0) {
     $_SESSION['err'] = $signin_error;
     header('Location: ../views/signin.php');
@@ -32,5 +37,4 @@ if (count($signin_error) > 0) {
 }
 
 // ③サインイン処理
-$auth = new Auth(filter_input(INPUT_POST, 'email'), filter_input(INPUT_POST, 'password'), $username = null, $confirm_password = null);
 $auth->signIn();

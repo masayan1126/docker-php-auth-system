@@ -2,7 +2,7 @@
 
 /**
  * マイページ画面の実装内容
- * ①認証しているか判定し、していなかったら新規登録画面へ返す
+ * ①認証しているか判定し、していなかったらサインイン画面へ返す
  */
 
 session_start();
@@ -10,15 +10,10 @@ session_start();
 require_once(dirname(__FILE__) . '/../classes/Auth.php'); 
 require_once(dirname(__FILE__) . '/../functions.php');
 
-// ①認証しているか判定し、していなかったら新規登録画面へ返す
+// ①認証状態(セッションが残っている状態)を判定し、していなかったらサインイン画面へ返す
 $isAuthenticated = Auth::checkIsAuthenticated();
-$session_expired = null;
 
 if (!$isAuthenticated) {
-    $session_expired = 'セッションが切れたため、再度サインインしてください。';
-    // セッションを初期化
-    $_SESSION = array();
-    session_destroy();
     header('Location: signin.php');
     exit();
 }
